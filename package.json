@@ -1,0 +1,50 @@
+{
+  "name": "@odingard/bifrost-verify",
+  "version": "0.1.0",
+  "description": "Offline verification for Bifrost signed receipts, transparency-log bundles, review packets, and W3C credentials.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": "https://github.com/Odingard/bifrost-verify",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "default": "./dist/core.js"
+    },
+    "./buyer": {
+      "types": "./dist/buyer.d.ts",
+      "default": "./dist/buyer.js"
+    },
+    "./vc": {
+      "types": "./dist/vc.d.ts",
+      "default": "./dist/vc.js"
+    }
+  },
+  "bin": {
+    "bifrost-verify": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@noble/curves": "2.2.0",
+    "@noble/hashes": "2.2.0",
+    "canonicalize": "2.1.0",
+    "jose": "6.2.12"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "22.20.4"
+  }
+}
