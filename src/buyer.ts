@@ -3,6 +3,7 @@
 import {
   verifyBundle,
   verifyPacket,
+  verifyPacketBundle,
   checkOnline,
   fetchTenantKeys,
   fetchDomainDoc,
@@ -50,7 +51,11 @@ export function parseInput(text: string, filename = ''): Parsed | null {
   try {
     const obj = JSON.parse(trimmed);
     if (obj && typeof obj === 'object') {
-      if (obj.format === 'bifrost-receipt-bundle/1' && typeof obj.receipt === 'string')
+      if (
+        (obj.format === 'bifrost-receipt-bundle/1' ||
+          obj.format === 'bifrost-review-packet-bundle/1') &&
+        typeof obj.receipt === 'string'
+      )
         return { kind: 'bundle', bundle: obj as ReceiptBundle, jws: obj.receipt };
       if (typeof obj.jws === 'string')
         return jwsParsed(obj.jws, typeof obj.id === 'string' ? obj.id : undefined);
@@ -115,6 +120,13 @@ export async function verifyItem(
       result.payload = payload;
       result.issuerOrigin = item.bundle.issuer_origin;
       result.issuerKeysUrl = payload?.issuer?.keys_url;
+      if (item.bundle.format === 'bifrost-review-packet-bundle/1') {
+        const report = await verifyPacketBundle(item.bundle);
+        result.packet = report;
+        result.failures.push(...report.failures);
+        result.payload = report.payload;
+        result.bundleDoc = item.bundle;
+      } else {
       let domainKeys: Array<JWKish & { kid: string }> | undefined;
       let domainRoots;
       if (payload?.issuer?.keys_url && live) {
@@ -132,6 +144,7 @@ export async function verifyItem(
       result.bundleDoc = item.bundle;
       result.domainBound = result.bundle.domain_bound;
       result.failures.push(...result.bundle.failures);
+      }
     } else if (item.kind === 'credential') {
       const cred = await verifyReceiptCredential(item.credential, {
         fetchImpl: live ? (f as typeof fetch) : undefined,
@@ -163,6 +176,15 @@ export async function verifyItem(
         if (item.kind === 'packet') {
           const id = item.id ?? result.payload?.packet_id ?? result.payload?.id;
           if (id) result.live = await checkOnline(origin, { kind: 'packet', id }, f);
+        } else if (
+          item.kind === 'bundle' &&
+          item.bundle.format === 'bifrost-review-packet-bundle/1'
+        ) {
+          const keys = await fetchTenantKeys(origin, undefined, f);
+          const livePacket = await verifyPacket(item.jws, keys);
+          if (livePacket.authenticity !== 'valid') result.failures.push('signature');
+          const id = result.payload?.packet_id;
+          if (typeof id === 'string') result.live = await checkOnline(origin, { kind: 'packet', id }, f);
         } else {
           const jws = item.kind === 'credential' ? (result.credential?.jws ?? item.jws) : item.jws;
           if (jws) result.live = await checkOnline(origin, { kind: 'receipt', jws }, f);

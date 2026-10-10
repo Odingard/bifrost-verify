@@ -8,6 +8,7 @@ export { canonicalize, logLeafInput, sthPayload, logId, verifySth } from './core
 export type { ReceiptBundle, BundleReport, PacketReport } from './core.ts';
 export {
   verifyPacket,
+  verifyPacketBundle,
   checkOnline,
   fetchTenantKeys,
   fetchDomainKeys,
@@ -100,6 +101,10 @@ export async function verifyBundle(
 }
 export { fetchDomainDoc } from './core.ts';
 export type { VerifyBundleOpts } from './core.ts';
+export { verifyActionChain } from './action.ts';
+export type { ActionChainExport, ActionChainReport } from './action.ts';
+export { verifyAuditAcceptance } from './audit.ts';
+export type { AuditAcceptanceBundle, AuditAcceptanceReport } from './audit.ts';
 export {
   base58btcEncode,
   base58btcDecode,

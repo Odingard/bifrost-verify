@@ -42,7 +42,11 @@ export function mth(leaves: Uint8Array[]): Uint8Array {
 }
 
 /** Bifrost log leaf input: JCS {v:1, kind, kid, receipt_sha256}. */
-export const logLeafInput = (kind: 'answer' | 'review', kid: string, receiptSha256: string) =>
+export const logLeafInput = (
+  kind: 'answer' | 'review' | 'action' | 'audit_acceptance',
+  kid: string,
+  receiptSha256: string,
+) =>
   canonicalize({ v: 1, kind, kid, receipt_sha256: receiptSha256 });
 
 // --- RFC 6962 §2.1.1 inclusion proofs --------------------------------------
@@ -232,6 +236,7 @@ export type ReceiptBundle = {
     leaf_index: number;
     tree_size: number;
     audit_path: string[];
+    leaf_kind?: 'answer' | 'review' | 'action' | 'audit_acceptance';
     witnessed?: { checkpoint: string; tree_size: number; audit_path: string[] };
     anchors?: Array<{
       tree_size: number;
@@ -658,6 +663,50 @@ export async function verifyPacket(
     failures.push('authenticity');
   }
   return report;
+}
+
+/** Verify a signed review-packet bundle: packet signature + review log inclusion. */
+export async function verifyPacketBundle(bundle: ReceiptBundle): Promise<PacketReport & { logged: boolean }> {
+  const failures: string[] = [];
+  const packet: PacketReport = {
+    authenticity: 'invalid',
+    key_status: 'unknown',
+    payload: null,
+    failures,
+  };
+  if (bundle.format !== 'bifrost-review-packet-bundle/1' || bundle.log?.leaf_kind !== 'review') {
+    failures.push('format');
+    return { ...packet, logged: false };
+  }
+  const result = await verifyPacket(bundle.receipt, bundle.keys?.keys ?? []);
+  packet.authenticity = result.authenticity;
+  packet.key_status = result.key_status;
+  packet.payload = result.payload;
+  failures.push(...result.failures);
+  let logged = false;
+  try {
+    const header = decodeJwsHeader(bundle.receipt);
+    const leaf = leafHash(logLeafInput('review', String(header.kid), sha256hex(bundle.receipt)));
+    const sth = await verifySth(bundle.log.sth, bundle.log.public_jwk);
+    if (logId(bundle.log.public_jwk) !== bundle.log.log_id || sth.log_id !== bundle.log.log_id)
+      failures.push('log_id');
+    if (
+      sth.tree_size !== bundle.log.tree_size ||
+      !verifyInclusion(
+        leaf,
+        bundle.log.leaf_index,
+        bundle.log.tree_size,
+        bundle.log.audit_path.map((h) => hexToBytes(h)),
+        hexToBytes(sth.root_hash),
+      )
+    )
+      failures.push('log_inclusion');
+    else if (!failures.includes('log_id')) logged = true;
+  } catch {
+    failures.push('sth_signature');
+  }
+  if (!logged && !failures.includes('log_inclusion')) failures.push('log_inclusion');
+  return { ...packet, logged };
 }
 
 // --- Live checks -------------------------------------------------------------

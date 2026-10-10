@@ -95,6 +95,41 @@ failures, 1 otherwise. By default everything is verified offline;
 `--fetch-domain` / `--fetch-did` opt in to fetching the issuer's published
 key document.
 
+## Action chains
+
+A federated action chain (`format: bifrost-action-chain/1`) is one org's signed
+request for an action at a counterparty org plus the counterparty's signed
+decision, the requesting org's acceptance, and optionally an execution report.
+The verifier checks each artifact's signature against the signing org's
+published keys, the `prior_sha256` linkage between artifacts, and the decision
+envelope against the recorded request:
+
+```sh
+bifrost-verify action chain.json --org-keys vendor.example=vendor-keys.json --org-keys buyer.example=buyer-keys.json
+# fetch each signing org's published keys instead:
+bifrost-verify action chain.json --fetch-keys
+```
+
+The report separates four claims, not one:
+
+- `integrity` — every artifact verifies under its claimed signing key and the
+  chain linkage is intact.
+- `authority` — the delegation credential narrows inside the parent chain the
+  way the specs require.
+- `authorization` — the decision artifact permits or denies the action
+  (`permit` / `deny` / `unknown`).
+- `execution` — `reported` means the deciding org *reported* that the action
+  ran; it is not independent confirmation that it did.
+
+```ts
+import { verifyActionChain } from '@odingard/bifrost-verify';
+
+const report = await verifyActionChain(chainExport, {
+  orgKeys: { 'vendor.example': keysDoc },
+});
+// { integrity, authority, authorization, execution, failures[], details }
+```
+
 ## API
 
 ```ts

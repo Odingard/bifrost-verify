@@ -8,8 +8,95 @@
 import { readFile } from 'node:fs/promises';
 import { verifyBundle, fetchDomainDoc, type ReceiptBundle } from './index.ts';
 import { verifyReceiptCredential } from './vc.ts';
+import { verifyActionChain } from './action.ts';
+import { verifyAuditAcceptance } from './audit.ts';
 
 const args = process.argv.slice(2);
+if (args[0] === 'action') {
+  // bifrost-verify action <chain.json> --org-keys <domain>=<file>... [--status <file>] [--fetch-keys]
+  const file = args[1];
+  if (!file) {
+    process.stderr.write(
+      'usage: bifrost-verify action <chain.json> --org-keys <domain>=<file>... [--status <status.jws>] [--fetch-keys]\n',
+    );
+    process.exit(2);
+  }
+  const chain = JSON.parse(await readFile(file, 'utf8'));
+  const orgKeys: Record<string, { keys: Array<Record<string, any>> }> = {};
+  const fetchKeys = args.includes('--fetch-keys');
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--org-keys' && args[i + 1]) {
+      const [domain, path] = args[++i].split('=');
+      orgKeys[domain] = JSON.parse(await readFile(path, 'utf8'));
+    }
+  }
+  if (fetchKeys) {
+    const domains = new Set<string>();
+    const cred = chain.delegation_credential;
+    if (cred)
+      try {
+        domains.add(JSON.parse(Buffer.from(cred.split('.')[1], 'base64url').toString()).org?.domain);
+      } catch {}
+    for (const r of chain.receipts ?? []) if (r.signer_domain) domains.add(r.signer_domain);
+    for (const d of domains) {
+      if (!d || orgKeys[d]) continue;
+      const doc = await fetchDomainDoc(`https://${d}/.well-known/bifrost-keys.json`);
+      orgKeys[d] = { keys: doc.keys };
+    }
+  }
+  const sIdx = args.indexOf('--status');
+  const status: Record<string, string> = {};
+  if (chain.delegation_status) {
+    try {
+      const delegationId = JSON.parse(
+        Buffer.from(chain.delegation_status.split('.')[1], 'base64url').toString(),
+      ).delegation_id;
+      if (delegationId) status[delegationId] = chain.delegation_status;
+    } catch {}
+  }
+  if (sIdx >= 0) {
+    const raw = (await readFile(args[sIdx + 1], 'utf8')).trim();
+    try {
+      const parsed = JSON.parse(raw) as Record<string, string> | string;
+      if (typeof parsed === 'string') {
+        const delegationId = JSON.parse(
+          Buffer.from(parsed.split('.')[1], 'base64url').toString(),
+        ).delegation_id;
+        if (delegationId) status[delegationId] = parsed;
+      } else {
+        Object.assign(status, parsed);
+      }
+    } catch {
+      const delegationId = JSON.parse(
+        Buffer.from(raw.split('.')[1], 'base64url').toString(),
+      ).delegation_id;
+      if (delegationId) status[delegationId] = raw;
+    }
+  }
+  const report = await verifyActionChain(chain, {
+    orgKeys,
+    ...(Object.keys(status).length ? { status } : {}),
+  });
+  process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+  process.exit(report.failures.length === 0 && report.integrity === 'valid' ? 0 : 1);
+}
+if (args[0] === 'audit') {
+  // bifrost-verify audit <acceptance.json> [--keys <file>]
+  const file = args[1];
+  if (!file) {
+    process.stderr.write('usage: bifrost-verify audit <acceptance.json> [--keys <file>]\n');
+    process.exit(2);
+  }
+  const input = JSON.parse(await readFile(file, 'utf8'));
+  const kIdx = args.indexOf('--keys');
+  const keys =
+    kIdx >= 0
+      ? (JSON.parse(await readFile(args[kIdx + 1], 'utf8')) as { keys?: Record<string, any>[] }).keys
+      : undefined;
+  const report = await verifyAuditAcceptance(input, { keys });
+  process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+  process.exit(report.failures.length === 0 ? 0 : 1);
+}
 if (args[0] === 'credential') {
   const file = args[1];
   if (!file) {

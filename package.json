@@ -1,7 +1,7 @@
 {
   "name": "@odingard/bifrost-verify",
-  "version": "0.1.1",
-  "description": "Offline verification for Bifrost signed receipts, transparency-log bundles, review packets, and W3C credentials.",
+  "version": "0.1.2",
+  "description": "Offline verification for Bifrost signed receipts, transparency-log bundles, review packets, federated action chains, and W3C credentials.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": "https://github.com/Odingard/bifrost-verify",
@@ -28,6 +28,14 @@
     "./vc": {
       "types": "./dist/vc.d.ts",
       "default": "./dist/vc.js"
+    },
+    "./action": {
+      "types": "./dist/action.d.ts",
+      "default": "./dist/action.js"
+    },
+    "./audit": {
+      "types": "./dist/audit.d.ts",
+      "default": "./dist/audit.js"
     }
   },
   "bin": {
