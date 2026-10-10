@@ -1,6 +1,6 @@
 # @odingard/bifrost-verify
 
-Offline verification for [Bifrost](https://github.com/Odingard/bifrost-verify) trust artifacts:
+Offline verification for [Bifrost](https://odingard.com) trust artifacts:
 signed answer receipts, transparency-log bundles, agent-review packets, and W3C
 verifiable credentials.
 
@@ -36,11 +36,54 @@ action was ever executed. Trust in the signer's authority is a separate
 decision made by the relying party (for example, by recognizing the issuer's
 trust domain).
 
-## CLI
+## Getting a receipt
+
+Bundles come from the vendor's Bifrost gateway, not from this package:
+
+- `GET /v1/receipts/<receipt-id>/bundle` — the receipt bundle JSON this
+  verifier reads. Requires the reviewer's sign-in on that gateway.
+- `GET /v1/receipts/<receipt-id>/credential` — the same receipt exported as a
+  W3C verifiable credential (for `bifrost-verify credential`).
+- `GET /t/<workspace-slug>/did.json` — the vendor's public `did:web` document
+  (the key document `--domain-keys` / `didDocument` consume).
+
+The vendor's web console has a verify page where a reviewer can paste or
+upload a bundle or credential and see the same report.
+
+## Quickstart (5 minutes)
 
 ```sh
 npm install -g @odingard/bifrost-verify
 
+# Synthetic sample shipped with the package — verifies offline, exit 0:
+bifrost-verify "$(npm root -g)/@odingard/bifrost-verify/examples/bundle.json"
+```
+
+```json
+{
+  "authenticity": "valid",
+  "evidence_integrity": "valid",
+  "derivation": "model-entailed",
+  "logged": true,
+  "key_status": "active",
+  "key_custody": "bifrost",
+  "failures": []
+}
+```
+
+(Trimmed — the full report also lists domain binding, witness, anchor,
+purpose, and NDA-agreement fields.)
+
+```sh
+bifrost-verify "$(npm root -g)/@odingard/bifrost-verify/examples/tampered-bundle.json"
+# -> "authenticity": "invalid", "failures": ["authenticity"], exit 1
+```
+
+Or verify one of your own: `bifrost-verify <bundle.json> [--fetch-domain]`.
+
+## CLI
+
+```sh
 bifrost-verify <bundle.json> [--domain-keys <file>] [--fetch-domain]
     [--root <jwk.json>] [--witness <vkey>]... [--witness-quorum <n>]
     [--btc-header <height>:<hex>] [--check-bitcoin]
@@ -48,8 +91,9 @@ bifrost-verify credential <vc.json> [--did-doc <file>] [--fetch-did]
 ```
 
 Prints the verification report as JSON and exits 0 when there are no
-failures. By default everything is verified offline; `--fetch-domain` /
-`--fetch-did` opt in to fetching the issuer's published key document.
+failures, 1 otherwise. By default everything is verified offline;
+`--fetch-domain` / `--fetch-did` opt in to fetching the issuer's published
+key document.
 
 ## API
 
@@ -74,8 +118,8 @@ Merkle/OT/credential primitives for building your own checks.
 
 ## Wire formats
 
-The bundle, packet, and credential formats are described in the
-*Bifrost exchange spec (v1 draft)* (`docs/spec/bifrost-exchange-v1.md`).
+The bundle, packet, and credential formats are described in
+[SPEC.md](SPEC.md) — the Bifrost exchange spec, v1 draft.
 
 ## Requirements
 

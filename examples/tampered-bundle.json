@@ -1,0 +1,32 @@
+{
+  "format": "bifrost-receipt-bundle/1",
+  "receipt": "eyJhbGciOiJFZERTQSIsImtpZCI6IjY3Y2E2MWM0LTlhMTYtNGMzOS04ZTkzLWFkMjJmZTc4MWQyZSIsInR5cCI6ImJpZnJvc3QtcmVjZWlwdCtqd3MifQ.eyJ4IjoxfQ.J938tpT6FBqwXx-vQChUZVXXns1CjQqfmT6Hl3EAO9qtcj2r3j2Dpgl5X1Eic7Xx39o5f3bQ4tOwxZl7uxJTAA",
+  "issuer_origin": "http://localhost:4310",
+  "keys": {
+    "keys": [
+      {
+        "x": "JsYI5ZGlR90hGNx6qpqL9H5LIjfPou46M73cef-oDa8",
+        "crv": "Ed25519",
+        "kty": "OKP",
+        "kid": "67ca61c4-9a16-4c39-8e93-ad22fe781d2e",
+        "alg": "EdDSA",
+        "use": "sig",
+        "status": "active"
+      }
+    ]
+  },
+  "log": {
+    "log_id": "170bee2812e636ade9d33ed7644ea426e4ed8597369e8684a2a102c2ff622734",
+    "public_jwk": {
+      "x": "oaaNKLe78RnbkL4Rr41rBCtjsPhSkL6c3FvsLZmQVN4",
+      "crv": "Ed25519",
+      "kty": "OKP"
+    },
+    "origin": "localhost:4310/bifrost-log",
+    "checkpoint_vkey": "localhost:4310/bifrost-log+bb9da72f+AaGmjSi3u/EZ25C+Ea+NawQrY7D4UpC+nNxb7C2ZkFTe",
+    "sth": "eyJhbGciOiJFZERTQSIsImtpZCI6IjhjYjc3ZjdlLWNjZTQtNDYxYS1iMjAyLWFiM2E5MDVjZjk4OSIsInR5cCI6ImJpZnJvc3Qtc3RoK2p3cyJ9.eyJsb2dfaWQiOiIxNzBiZWUyODEyZTYzNmFkZTlkMzNlZDc2NDRlYTQyNmU0ZWQ4NTk3MzY5ZTg2ODRhMmExMDJjMmZmNjIyNzM0Iiwicm9vdF9oYXNoIjoiZjZjMjU4NDc3NmFhODY2MDAzMGJiNjIzMmU3N2NkZjg4YThlYmEzNTNjMmY1YTA0MDIyZjFlMjU4NTE5Y2Y5MCIsInRpbWVzdGFtcCI6IjIwMjYtMTAtMTBUMDI6MjQ6NDAuMzc5WiIsInRyZWVfc2l6ZSI6MX0.i9FthHrgPvrrp-BZz1Uz8qLQbCUsyNMtrpF-DpcIirs8MvscrCIKk_RfDEf_OFa9cUQHnvpAMmnfeAbX-smtCQ",
+    "leaf_index": 0,
+    "tree_size": 1,
+    "audit_path": []
+  }
+}
